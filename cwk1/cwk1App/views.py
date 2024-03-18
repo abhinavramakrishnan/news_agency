@@ -98,7 +98,7 @@ def Stories(request):
             formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
             filters['date__gte'] = formatted_date
 
-        stories_qs = Story.objects.filter(**filters).select_related('author')
+        stories_qs = Story.objects.filter(**filters)
     
         stories_list = list(stories_qs.values())
 
@@ -109,7 +109,7 @@ def Stories(request):
                 'headline' : record.get('headline'),
                 'story_cat' : record.get('category'),
                 'story_region' : record.get('region'),
-                'author' : record.get('author__name'),
+                'author' : record['author__name'],
                 'story_date' : record.get('date'),
                 'story_details' : record.get('details')
             }
