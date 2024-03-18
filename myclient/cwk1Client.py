@@ -1,4 +1,6 @@
 import requests
+import json
+from tabulate import tabulate
 
 # Create a session object for making HTTP requests
 session = requests.Session()
@@ -15,7 +17,7 @@ def login(url):
 
     try:
         # Send POST request to login API endpoint with provided credentials
-        response = session.post(f"{url}/api/login/", data={'username': username, 'password': password})
+        response = session.post(f"https://{url}/api/login/", data={'username': username, 'password': password})
         if response.status_code == 200:
             authenticated = True
             print(response.text)
@@ -49,7 +51,6 @@ def post_story(url):
 
     return response.text
 
-# Function to retrieve stories based on filters
 def get_stories(base_url, category_filter, region_filter, date_filter):
     # Send GET request to stories API endpoint with provided filters
     response = session.get(f"{base_url}/api/stories/", 
@@ -63,18 +64,95 @@ def get_stories(base_url, category_filter, region_filter, date_filter):
             # Parse the JSON response
             data = response.json()
             stories = data.get('stories', [])
+
             if not stories:
                 print("No stories found matching the filters.")
+            else:
+                # Prepare data for tabulate
+                table_data = []
+                for story in stories:
+                    key = story.get('key')
+                    headline = story.get('headline')
+                    category = story.get('story_cat')
+                    region = story.get('story_region')
+                    author = story.get('author')
+                    date = story.get('story_date')
+                    details = story.get('story_details')
+                    
+                    table_data.append([key, headline, category, region, author, date, details])
+
+                # Print stories in table format
+                print(tabulate(table_data, headers=['Key', 'Headline', 'Category', 'Region', 'Author', 'Date', 'Details'], tablefmt='simple_grid'))
+
+                
         except ValueError:
             print("Error parsing JSON response.")
     else:
-        print(f"Error retrieving stories: {response.text}")
+        print(f"Error retrieving stories: {response.status_code}")
 
 # Function to delete a story from the system
 def delete_story(base_url, key):
     # Send DELETE request to stories API endpoint with provided story key
     response = session.delete(f"{base_url}/api/stories/{key}")
     return response.text
+
+def get_agencies():
+    response = session.get("https://newssites.pythonanywhere.com/api/directory")
+
+    if response.status_code == 200:
+        try:
+            data = response.json()
+            if not data:
+                return None
+            else:
+                return data
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON response: {e}")
+            return None
+    else:
+        print(f"Error retrieving agencies: {response.text}")
+        return None
+    
+def list_agencies():
+    data = get_agencies()
+    if not data:
+        print("No agencies found")
+    
+    agencies = []
+    for agency in data:
+        name = agency.get('agency_name')
+        url = agency.get('url')
+        code = agency.get('agency_code')
+        agencies.append([name, url, code])
+
+    print(tabulate(agencies, headers=["Name", "URL", "Code"], tablefmt="simple_grid"))
+    
+def all_news(category_filter, region_filter, date_filter):
+    data = get_agencies()
+    if not data:
+        print("No agencies found")
+
+    agencies_url = []
+    for agency in data:
+        name = agency.get('agency_name')
+        url = agency.get('url')
+        agencies_url.append([name, url])
+    
+    for agency in agencies_url:
+        print(f"Stories from: {agency[0]}")
+        get_stories(agency[1], category_filter, region_filter, date_filter)
+
+def collect_news(agency_id, category_filter, region_filter, date_filter):
+    data = get_agencies()
+    if not data:
+        print("No agencies found")
+    
+    for agency in data:
+        url = agency.get('url')
+        code = agency.get('agency_code')
+        if agency_id == code:
+            get_stories(url, category_filter, region_filter, date_filter)
+        
 
 # Main function to execute the program
 def main():
@@ -100,6 +178,30 @@ def main():
                 if base_url is None:
                     base_url = arguments[0]
                 login(base_url)
+
+        elif command == "list":
+            list_agencies()
+
+        elif command == "news":
+            agency_id = None
+            category_filter = "*"
+            region_filter = "*"
+            date_filter = "*"
+            for arg in arguments:
+                if arg.startswith("-id="):
+                    agency_id = (arg.split('=')[1].strip('\"')).upper()
+                if arg.startswith("-cat="):
+                    category_filter = arg.split('=')[1].strip('\"')
+                if arg.startswith("-reg="):
+                    region_filter = arg.split('=')[1].strip('\"')
+                if arg.startswith("-date="):
+                    date_filter = arg.split('=')[1].strip('\"')
+
+            if agency_id != None:
+                collect_news(agency_id, category_filter, region_filter, date_filter)
+            else:
+                all_news(category_filter, region_filter, date_filter)
+
         
         elif authenticated:
             if command == "logout":
@@ -107,20 +209,6 @@ def main():
             
             elif command == "post":
                 post_story(base_url)
-            
-            elif command == "news":
-                category_filter = "*"
-                region_filter = "*"
-                date_filter = "*"
-                for arg in arguments:
-                    if arg.startswith("-cat="):
-                        category_filter = arg.split('=')[1].strip('\"')
-                    elif arg.startswith("-reg="):
-                        region_filter = arg.split('=')[1].strip('\"')
-                    elif arg.startswith("-date="):
-                        date_filter = arg.split('=')[1].strip('\"')
-
-                get_stories(base_url, category_filter, region_filter, date_filter)
             
             elif command == "delete":
                 if len(arguments) != 1:
