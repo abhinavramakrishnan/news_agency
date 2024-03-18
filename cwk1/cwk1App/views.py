@@ -98,20 +98,22 @@ def Stories(request):
             formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
             filters['date__gte'] = formatted_date
 
-        stories_qs = Story.objects.filter(**filters)
+        stories_qs = Story.objects.filter(**filters).select_related('author')
     
         stories_list = list(stories_qs.values())
 
         stories_labeled = []
         for record in stories_list:
+            # Access the author's name directly through the ForeignKey relationship
+            author_name = record['author__name']  # Assuming 'name' is the field for the author's name
             story = {
-                'key' : record.get('id'),
-                'headline' : record.get('headline'),
-                'story_cat' : record.get('category'),
-                'story_region' : record.get('region'),
-                'author' : record['author__name'],
-                'story_date' : record.get('date'),
-                'story_details' : record.get('details')
+                'key': record.get('id'),
+                'headline': record.get('headline'),
+                'story_cat': record.get('category'),
+                'story_region': record.get('region'),
+                'author': author_name,
+                'story_date': record.get('date'),
+                'story_details': record.get('details')
             }
             stories_labeled.append(story)
 
