@@ -14,6 +14,8 @@ from datetime import datetime
 
 
 # Create your views here.
+
+# View for user login
 @csrf_exempt
 def Login(request):
     if request.method == 'POST':
@@ -26,8 +28,10 @@ def Login(request):
             if not username or not password:
                 return HttpResponse("Username and password are required", status=401, reason="Unauthorized")
             else:
+                # Authenticate user
                 user = authenticate(request, username=username, password=password)
                 if user is not None:
+                    # Log the user in
                     login(request, user)
                     return HttpResponse("Welcome!", status=200, reason="OK")
                 else:
@@ -35,17 +39,20 @@ def Login(request):
     else:
         return HttpResponse("Request not allowed", status=405, reason="Method Not Allowed")
 
+# View for user logout
 @csrf_exempt
 def Logout(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
+            # Log the user out
             logout(request)
             return HttpResponse("Goodbye!", status=200, reason="OK")
         else:
             return HttpResponse("Not logged in", status=403, reason="Forbidden")
     else:
-        return HttpResponse("Reqeust not allowed", status=405, reason="Method Not Allowed")
+        return HttpResponse("Request not allowed", status=405, reason="Method Not Allowed")
     
+# View for posting and retrieving stories
 @csrf_exempt
 def Stories(request):
     # User tries to post a story
@@ -55,7 +62,7 @@ def Stories(request):
             # Read the JSON payload from the request body
             data = json.loads(request.body)
             
-            # Unpack the data into appropirate variables
+            # Unpack the data into appropriate variables
             headline = data.get('headline')
             category = data.get('category')
             region = data.get('region')
@@ -75,13 +82,13 @@ def Stories(request):
                 return HttpResponse("Story posted", status=201, reason="CREATED")
             # Handle the exception
             except Exception as e:
-                return HttpResponse(f"Error: {e}", status=503, reason="Service Unavailable")
+                return HttpResponse(f"Error posting story", status=503, reason="Service Unavailable")
         else:
             return HttpResponse("Not logged in", status=403, reason="Forbidden")
         
     # User tries to get a story
     elif request.method == 'GET':
-        # Unpack the data into appropirate variables
+        # Unpack the data into appropriate variables
         category_filter = request.GET.get('story_cat')
         region_filter = request.GET.get('story_region')
         date_filter = request.GET.get('story_date')
@@ -98,41 +105,53 @@ def Stories(request):
             formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
             filters['date__gte'] = formatted_date
 
+        # Retrieve stories based on filters
         stories_qs = Story.objects.filter(**filters)
-    
-        stories_list = list(stories_qs.values())
-        stories_labeled = []
-        for record in stories_list:
-            author_id = record.get('author_id')
-            author_name = Author.objects.get(id=author_id).name
-            story = {
-                'key': record.get('id'),
-                'headline': record.get('headline'),
-                'story_cat': dict(Story.CATEGORY_CHOICES).get(record.get('category')),
-                'story_region': dict(Story.REGION_CHOICES).get(record.get('region')),
-                'author': author_name,
-                'story_date': record.get('date'),
-                'story_details': record.get('details')
+
+        # Check if the queryset is empty
+        if not stories_qs.exists():
+            return HttpResponse('No stories found', status=404, reason="Not Found")
+
+        else:
+            # Prepare the stories for response
+            stories_list = list(stories_qs.values())
+            stories_labeled = []
+            for record in stories_list:
+                # Fetch author's name for each story
+                author_id = record.get('author_id')
+                author_name = Author.objects.get(id=author_id).name
+                story = {
+                    'key': record.get('id'),
+                    'headline': record.get('headline'),
+                    'story_cat': dict(Story.CATEGORY_CHOICES).get(record.get('category')),
+                    'story_region': dict(Story.REGION_CHOICES).get(record.get('region')),
+                    'author': author_name,
+                    'story_date': record.get('date'),
+                    'story_details': record.get('details')
+                }
+                stories_labeled.append(story)
+
+            # Create a JSON response containing the list of stories
+            stories_json = {
+                'stories': stories_labeled
             }
-            stories_labeled.append(story)
+            return JsonResponse(stories_json, status=200)        
 
-        # Create a dictionary containing the list of stories
-        stories_json = {
-            'stories': stories_labeled
-        }
-        return JsonResponse(stories_json, status=200)        
-
-
+# View for deleting stories
 @csrf_exempt
 def Delete(request, key):
     # User tries to delete a story
     if request.method == 'DELETE':
         # Ensure user is logged in
         if request.user.is_authenticated:
-            story = Story.objects.get(pk=key)
-            story.delete()
-            return HttpResponse("Story deleted", status=200, reason="OK")
+            # Retrieve and delete the story
+            try:
+                story = Story.objects.get(pk=key)
+                story.delete()
+                return HttpResponse("Story deleted", status=200, reason="OK")
+            except Exception as e:
+                return HttpResponse("Story not found", status=503, reason="Service Unavailble")
         else:
             return HttpResponse("Not logged in", status=403, reason="Forbidden")
     else:
-        return HttpResponse("Reqeust not allowed", status=405, reason="Method Not Allowed")
+        return HttpResponse("Request not allowed", status=405, reason="Method Not Allowed")
