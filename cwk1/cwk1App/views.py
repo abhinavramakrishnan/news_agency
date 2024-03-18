@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 
 # Import the Story model
-from .models import Story
+from .models import Author, Story
 
 # Import module for processing JSON payload
 import json
@@ -103,12 +103,14 @@ def Stories(request):
         stories_list = list(stories_qs.values())
         stories_labeled = []
         for record in stories_list:
+            author_id = record.get('author_id')
+            author_name = Author.objects.get(id=author_id).name
             story = {
                 'key': record.get('id'),
                 'headline': record.get('headline'),
                 'story_cat': dict(Story.CATEGORY_CHOICES).get(record.get('category')),
                 'story_region': dict(Story.REGION_CHOICES).get(record.get('region')),
-                'author': record.get('author__name'),
+                'author': author_name,
                 'story_date': record.get('date'),
                 'story_details': record.get('details')
             }
