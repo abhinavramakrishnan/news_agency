@@ -81,38 +81,34 @@ def Stories(request):
         
     # User tries to get a story
     elif request.method == 'GET':
-        # Ensure user is logged in
-        if request.user.is_authenticated:
-            # Unpack the data into appropirate variables
-            category_filter = request.GET.get('story_cat')
-            region_filter = request.GET.get('story_region')
-            date_filter = request.GET.get('story_date')
+        # Unpack the data into appropirate variables
+        category_filter = request.GET.get('story_cat')
+        region_filter = request.GET.get('story_region')
+        date_filter = request.GET.get('story_date')
 
-            # Define filters as a dictionary
-            filters = {}
+        # Define filters as a dictionary
+        filters = {}
 
-            if (category_filter!="*"):
-                filters['category'] = category_filter
-            if (region_filter!="*"):
-                filters['region'] = region_filter
-            if (date_filter!="*"):
-                # Convert the input date into the correct format to search the database
-                formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
-                filters['date__gte'] = formatted_date
+        if (category_filter!="*"):
+            filters['category'] = category_filter
+        if (region_filter!="*"):
+            filters['region'] = region_filter
+        if (date_filter!="*"):
+            # Convert the input date into the correct format to search the database
+            formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
+            filters['date__gte'] = formatted_date
 
-            stories_qs = Story.objects.filter(**filters)
-        
-            stories_list = list(stories_qs.values())
+        stories_qs = Story.objects.filter(**filters)
+    
+        stories_list = list(stories_qs.values())
 
-            # Create a dictionary containing the list of stories
-            stories_json = {
-                'stories': stories_list
-            }
-            return JsonResponse(stories_json, status=200)        
-        else:
-            return HttpResponse("Not logged in", status=403, reason="Forbidden")
+        # Create a dictionary containing the list of stories
+        stories_json = {
+            'stories': stories_list
+        }
+        return JsonResponse(stories_json, status=200)        
     else:
-        return HttpResponse("Reqeust not allowed", status=405, reason="Method Not Allowed")
+        return HttpResponse("Not logged in", status=403, reason="Forbidden")
 
 @csrf_exempt
 def Delete(request, key):
