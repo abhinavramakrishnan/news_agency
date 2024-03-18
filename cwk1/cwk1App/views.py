@@ -98,23 +98,20 @@ def Stories(request):
             formatted_date = datetime.strptime(date_filter, "%d/%m/%Y").date()
             filters['date__gte'] = formatted_date
 
-        # Get the stories form the database with the filters applied
         stories_qs = Story.objects.filter(**filters)
+    
+        stories_list = list(stories_qs.values())
 
-        # Turn the query set into a list with appropriate lables
-        stories_list = list(stories_qs.values('key', 'headline', 'category', 'region', 'author', 'date', 'details'))
-        
-        # Turn the list into appropirate json format with lables
         stories_labeled = []
         for record in stories_list:
             story = {
-                'key' : record['key'],
-                'headline' : record['headline'],
-                'story_cat' : record['category'],
-                'story_region' : record['region'],
-                'author' : record['author'],
-                'story_date' : record['date'],
-                'story_details' : record['details']
+                'key' : record.get('key'),
+                'headline' : record.get('headline'),
+                'story_category' : record.get('category'),
+                'story_region' : record.get('region'),
+                'author' : record.get('author'),
+                'story_date' : record.get('date'),
+                'story_details' : record.get('details')
             }
             stories_labeled.append(story)
 
@@ -122,7 +119,8 @@ def Stories(request):
         stories_json = {
             'stories': stories_labeled
         }
-        return JsonResponse(stories_json, status=200)
+        return JsonResponse(stories_json, status=200)        
+
 
 @csrf_exempt
 def Delete(request, key):
