@@ -15,7 +15,7 @@ class Story(models.Model):
         ('pol', 'Politics'),
         ('art', 'Art'),
         ('tech', 'Technology'),
-        ('trivia', 'Trivia'),
+        ('trivia', 'Trivial'),
     ]
     
     REGION_CHOICES = [

@@ -49,7 +49,7 @@ def post_story(url):
     # Send POST request to stories API endpoint with story data in JSON format
     response = session.post(f"https://{url}/api/stories/", json=story_json)
 
-    return response.text
+    print(response.text)
 
 # Function to retrieve stories based on filters
 def get_stories(base_url, category_filter, region_filter, date_filter):
@@ -95,7 +95,7 @@ def get_stories(base_url, category_filter, region_filter, date_filter):
 def delete_story(base_url, key):
     # Send DELETE request to stories API endpoint with provided story key
     response = session.delete(f"https://{base_url}/api/stories/{key}")
-    return response.text
+    print(response.text)
 
 # Function to retrieve agencies from the system
 def get_agencies():
@@ -177,12 +177,15 @@ def main():
         command, *arguments = user_input.split()
 
         if (command == "login"):
-            if len(arguments) != 1:
-                print("Invalid number of arguments. Please try again")
+            if (authenticated):
+                print("Already logged in")
             else:
-                if base_url is None:
-                    base_url = arguments[0]
-                login(base_url)
+                if len(arguments) != 1:
+                    print("Invalid number of arguments. Please try again")
+                else:
+                    if base_url is None:
+                        base_url = arguments[0]
+                    login(base_url)
 
         elif command == "list":
             list_agencies()
