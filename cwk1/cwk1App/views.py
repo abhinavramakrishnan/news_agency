@@ -105,11 +105,11 @@ def Stories(request):
         stories_labeled = []
         for record in stories_list:
             story = {
-                'key' : record.get('key'),
+                'key' : record.get('id'),
                 'headline' : record.get('headline'),
-                'story_category' : record.get('category'),
+                'story_cat' : record.get('category'),
                 'story_region' : record.get('region'),
-                'author' : record.get('author'),
+                'author' : record.get('author_id'),
                 'story_date' : record.get('date'),
                 'story_details' : record.get('details')
             }
