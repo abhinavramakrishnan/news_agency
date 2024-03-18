@@ -29,7 +29,7 @@ def login(url):
 # Function to logout from the system
 def logout(url):
     # Send POST request to logout API endpoint
-    response = session.post(f"{url}/api/logout/")
+    response = session.post(f"https://{url}/api/logout/")
     print(response.text)
 
 # Function to post a story to the system
@@ -47,10 +47,11 @@ def post_story(url):
     }
 
     # Send POST request to stories API endpoint with story data in JSON format
-    response = session.post(f"{url}/api/stories/", json=story_json)
+    response = session.post(f"https://{url}/api/stories/", json=story_json)
 
     return response.text
 
+# Function to retrieve stories based on filters
 def get_stories(base_url, category_filter, region_filter, date_filter):
     # Send GET request to stories API endpoint with provided filters
     response = session.get(f"{base_url}/api/stories/", 
@@ -93,9 +94,10 @@ def get_stories(base_url, category_filter, region_filter, date_filter):
 # Function to delete a story from the system
 def delete_story(base_url, key):
     # Send DELETE request to stories API endpoint with provided story key
-    response = session.delete(f"{base_url}/api/stories/{key}")
+    response = session.delete(f"https://{base_url}/api/stories/{key}")
     return response.text
 
+# Function to retrieve agencies from the system
 def get_agencies():
     response = session.get("https://newssites.pythonanywhere.com/api/directory")
 
@@ -113,6 +115,7 @@ def get_agencies():
         print(f"Error retrieving agencies: {response.text}")
         return None
     
+# Function to list agencies
 def list_agencies():
     data = get_agencies()
     if not data:
@@ -127,6 +130,7 @@ def list_agencies():
 
     print(tabulate(agencies, headers=["Name", "URL", "Code"], tablefmt="simple_grid"))
     
+# Function to fetch news from all agencies or a specific agency
 def all_news(category_filter, region_filter, date_filter):
     data = get_agencies()
     if not data:
@@ -142,6 +146,7 @@ def all_news(category_filter, region_filter, date_filter):
         print(f"Stories from: {agency[0]}")
         get_stories(agency[1], category_filter, region_filter, date_filter)
 
+# Function to fetch news from a specific agency
 def collect_news(agency_id, category_filter, region_filter, date_filter):
     data = get_agencies()
     if not data:
